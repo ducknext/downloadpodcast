@@ -30,8 +30,6 @@ def my_hook(d):
 def download(video_id):
     ydl_opts = {
         'audio-format': 'bestaudio/best',
-        # 'extractaudio': True,  # only keep the video
-        # 'audioformat': 'mp3',  # convert to mp3
         'outtmpl': '%(id)s-%(uploader)s-%(title)s.%(ext)s',  # name the file
         'noplaylist': True,  # only single video, not playlist
         'progress_hooks': [my_hook],
@@ -44,16 +42,32 @@ def download(video_id):
         print("Youtube Error")
 
 
+def dump_file(data_dump, file_name):
+    with open(file_name, 'w') as f:
+        json.dump(data_dump, f)
+
+
+def load_file(file_name):
+    try:
+        with open(file_name) as f:
+            file_data = json.load(f)
+        return file_data
+    except:  # noqa
+        return 'Can not find file {}'.format(file_name)
+
+
 def main():
-    with open('.podcast_channels.json') as f:
-        channels = json.load(f)
+    channels = load_file('.podcast_channels.json')
+    if not channels:
+        return
 
     for channel in channels:
         video_ids = get_youtube_link_ids(channel['id'])
 
         for video in video_ids:
-            with open('.podcast_downloads.json') as f:
-                downloads = json.load(f)
+            downloads = load_file('.podcast_downloads.json')
+            if not downloads:
+                dump_file([{"id": 'place_holder'}], '.podcast_downloads.json')
 
             download_ids = []
             for item in downloads:
@@ -66,8 +80,7 @@ def main():
                     return err
                 downloads.append({"id": video})
 
-            with open('.podcast_downloads.json', 'w') as f:
-                json.dump(downloads, f)
+            dump_file(downloads, '.podcast_downloads.json')
 
 
 if __name__ == "__main__":
