@@ -1,7 +1,7 @@
-# Download videos from youtube channel
+# Download videos from a YouTube channel
 
-The script reads channel IDs from a Json file `.podcast_channels.json` created by the user. 
-The Json file has the following structure with few example channels:
+The script reads channel IDs from a Json file `.podcast_channels.json` which has been created by the user int the same folder as the python script. 
+The channels Json file has the following structure with few example channels:
 
 ```
 [
