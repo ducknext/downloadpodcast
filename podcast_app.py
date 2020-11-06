@@ -37,7 +37,8 @@ def download(video_id):
 
     try:
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            ydl.download(['https://www.youtube.com/watch?v={}'.format(video_id)])
+            ydl.download(
+                ['https://www.youtube.com/watch?v={}'.format(video_id)])
     except youtube_dl.utils.DownloadError:
         print("Youtube Error")
 
@@ -47,40 +48,32 @@ def dump_file(data_dump, file_name):
         json.dump(data_dump, f)
 
 
-def load_file(file_name):
+def load_file_or_fail(file_name):
     try:
         with open(file_name) as f:
-            file_data = json.load(f)
-        return file_data
+            return json.load(f)
     except:  # noqa
-        return 'Can not find file {}'.format(file_name)
+        print('Can not find file {}'.format(file_name))
+        exit(1)
 
 
 def main():
-    channels = load_file('.podcast_channels.json')
-    if not channels:
-        return
-
-    for channel in channels:
+    for channel in load_file_or_fail('.podcast_channels.json'):
         video_ids = get_youtube_link_ids(channel['id'])
 
         for video in video_ids:
-            downloads = load_file('.podcast_downloads.json')
-            if not downloads:
-                dump_file([{"id": 'place_holder'}], '.podcast_downloads.json')
+            downloads = load_file_or_default(
+                '.podcast_downloads.json',
+                [{"id": 'place_holder'}],
+            )
 
-            download_ids = []
-            for item in downloads:
-                download_ids.append(item['id'])
-
-            if video not in download_ids:
-
+            if video not in downloads.keys():
                 err = download(video)
                 if err:
-                    return err
-                downloads.append({"id": video})
-
-            dump_file(downloads, '.podcast_downloads.json')
+                    print(err)
+                else:
+                    downloads.append({"id": video})
+                    dump_file(downloads, '.podcast_downloads.json')
 
 
 if __name__ == "__main__":
