@@ -13,4 +13,6 @@ The channels Json file has the following structure with few example channels:
 
 ```
 
-The script uses RSS feed link to find the most recent videos and download those which hasn't been downloaded already.
+The script uses RSS feed link to find the most recent videos for a channel.
+If there is a new channel added to the list then on the first run with this new channel the script will save all video IDs as already downloaded without downloading them. It goes with the assumption that you are up to date with the channel and want to download only new videos.
+On every next run it will download those videos which hasn't been downloaded already.
