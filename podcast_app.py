@@ -5,6 +5,8 @@ import youtube_dl
 from bs4 import BeautifulSoup
 import requests
 import json
+import os
+import sys
 
 
 def get_youtube_link_ids(channel_id):
@@ -19,7 +21,7 @@ def my_hook(d):
         print('Done downloading, now converting ...')
 
 
-def download(video, downloads):
+def download_file(video, downloads, channel, downloads_file_path):
     ydl_opts = {
         'audio-format': 'bestaudio/best',
         'outtmpl': '%(id)s-%(uploader)s-%(title)s.%(ext)s',  # name the file
@@ -32,8 +34,8 @@ def download(video, downloads):
             ydl.download(
                 ['https://www.youtube.com/watch?v={}'.format(video)])
 
-        downloads.append({"id": video})
-        dump_file(downloads, '.podcast_downloadsss.json')
+        downloads.append({"id": video, "channel": channel['id']})
+        dump_file(downloads, downloads_file_path)
     except youtube_dl.utils.DownloadError:
         print("Youtube Error with link https://www.youtube.com/watch?v={}".format(video))
 
@@ -62,17 +64,36 @@ def load_file_or_default(file_name, place_holder):
             return json.load(f)
 
 
+def first_time_channel(channel, video_ids, downloads_file_path):
+    downloads = load_file_or_default(
+        downloads_file_path,
+        [{"id": 'place_holder', "channel": "channel_place_holder"}],
+    )
+
+    if not any(download['channel'] == channel['id'] for download in downloads):
+        for video in video_ids:
+            downloads.append({"id": video, "channel": channel['id']})
+        dump_file(downloads, downloads_file_path)
+
+
 def main():
-    for channel in load_file_or_fail('.podcast_channels.json'):
+    called_from = os.path.dirname(os.path.realpath(__file__))
+    channels_file_path = called_from + '/' + '.podcast_channels.json'
+    downloads_file_path = called_from + '/' + '.podcast_downloads.json'
+
+    for channel in load_file_or_fail(channels_file_path):
         video_ids = get_youtube_link_ids(channel['id'])
+
+        first_time_channel(channel, video_ids, downloads_file_path)
 
         for video in video_ids:
             downloads = load_file_or_default(
-                '.podcast_downloadsss.json',
-                [{"id": 'place_holder'}],
+                downloads_file_path,
+                [{"id": 'place_holder', "channel": "channel_place_holder"}],
             )
+
             if not any(download['id'] == video for download in downloads):
-                download(video, downloads)
+                download_file(video, downloads, channel, downloads_file_path)
 
 
 if __name__ == "__main__":
