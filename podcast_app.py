@@ -30,41 +30,45 @@ def my_hook(d):
         print('Done downloading, now converting ...')
 
 
-def download_file(video, downloads, channel, downloads_file_path):
-    if channel['site'] == 'podbean':
+def download_youtube_file(video, downloads, channel, downloads_file_path):
 
-        title = str(video).split('/')[-1]
+    ydl_opts = {
+        'audio-format': 'bestaudio/best',
+        'outtmpl': '%(id)s-%(uploader)s-%(title)s.%(ext)s',
+        'noplaylist': True,
+        'progress_hooks': [my_hook],
+    }
 
-        print('Downloading {}...'.format(video))
-        download = requests.get(video)
-        if download.status_code == 200:
-            with open(title, 'wb') as f:
-                f.write(download.content)
+    try:
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download(
+                ['https://www.youtube.com/watch?v={}'.format(video)])
 
-            print('Download done')
+        downloads.append({"id": video, "channel": channel})
+        dump_file(downloads, downloads_file_path)
+    except youtube_dl.utils.DownloadError:
+        print("Youtube Error with link https://www.youtube.com/watch?v={}"
+              .format(video))
 
-            downloads.append({"id": video, "channel": channel['id']})
-            dump_file(downloads, downloads_file_path)
-        else:
-            print("PodBean Error with link {}".format(video))
 
-    if channel['site'] == 'youtube':
-        ydl_opts = {
-            'audio-format': 'bestaudio/best',
-            'outtmpl': '%(id)s-%(uploader)s-%(title)s.%(ext)s',
-            'noplaylist': True,
-            'progress_hooks': [my_hook],
-        }
+def download_podbean_file(video, downloads, channel, downloads_file_path):
+    title = str(video).split('/')[-1]
 
-        try:
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-                ydl.download(
-                    ['https://www.youtube.com/watch?v={}'.format(video)])
+    print('Downloading {}...'.format(title))
 
-            downloads.append({"id": video, "channel": channel['id']})
-            dump_file(downloads, downloads_file_path)
-        except youtube_dl.utils.DownloadError:
-            print("Youtube Error with link https://www.youtube.com/watch?v={}".format(video))
+    response = requests.get(video, stream=True)
+    if response.status_code == 200:
+        handle = open(title, "wb")
+        for chunk in response.iter_content(chunk_size=512):
+            if chunk:  # filter out keep-alive new chunks
+                handle.write(chunk)
+
+        print('Download done')
+
+        downloads.append({"id": video, "channel": channel})
+        dump_file(downloads, downloads_file_path)
+    else:
+        print("PodBean Error with link {}".format(video))
 
 
 def dump_file(data_dump, file_name):
@@ -97,14 +101,14 @@ def first_time_channel(channel, video_ids, downloads_file_path):
         [{"id": 'place_holder', "channel": "channel_place_holder"}],
     )
 
-    if not any(download['channel'] == channel['id'] for download in downloads):
+    if not any(download['channel'] == channel for download in downloads):
         for video in video_ids:
-            downloads.append({"id": video, "channel": channel['id']})
+            downloads.append({"id": video, "channel": channel})
         dump_file(downloads, downloads_file_path)
 
 
 def youtube_channel(channel, downloads_file_path):
-    video_ids = get_youtube_link_ids(channel['id'])
+    video_ids = get_youtube_link_ids(channel)
 
     first_time_channel(channel, video_ids, downloads_file_path)
 
@@ -114,12 +118,13 @@ def youtube_channel(channel, downloads_file_path):
             [{"id": 'place_holder', "channel": "channel_place_holder"}],
         )
 
-        if not any(download['id'] == video for download in downloads):
-            download_file(video, downloads, channel, downloads_file_path)
+        if video not in [download['id'] for download in downloads]:
+            download_youtube_file(
+                video, downloads, channel, downloads_file_path)
 
 
 def podbean_channel(channel, downloads_file_path):
-    links = get_podbean_links(channel['id'])
+    links = get_podbean_links(channel)
 
     first_time_channel(channel, links, downloads_file_path)
 
@@ -129,11 +134,9 @@ def podbean_channel(channel, downloads_file_path):
             [{"id": 'place_holder', "channel": "channel_place_holder"}],
         )
 
-        print(type(video))
-        print(type(downloads[0]))
-
-        if not any(download['id'] == video for download in downloads):
-            download_file(video, downloads, channel, downloads_file_path)
+        if video not in [download['id'] for download in downloads]:
+            download_podbean_file(
+                video, downloads, channel, downloads_file_path)
 
 
 def main():
@@ -144,10 +147,10 @@ def main():
     for channel in load_file_or_fail(channels_file_path):
 
         if channel['site'] == 'youtube':
-            youtube_channel(channel, downloads_file_path)
+            youtube_channel(channel['id'], downloads_file_path)
 
         if channel['site'] == 'podbean':
-            podbean_channel(channel, downloads_file_path)
+            podbean_channel(channel['id'], downloads_file_path)
 
 
 if __name__ == "__main__":
