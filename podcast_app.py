@@ -34,9 +34,14 @@ def download_youtube_file(video, downloads, channel, downloads_file_path):
 
     ydl_opts = {
         'audio-format': 'bestaudio/best',
-        'outtmpl': '%(id)s-%(uploader)s-%(title)s.%(ext)s',
+        'outtmpl': '%(id)s-%(uploader)s.%(ext)s',
         'noplaylist': True,
         'progress_hooks': [my_hook],
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
     }
 
     try:
@@ -96,10 +101,7 @@ def load_file_or_default(file_name, place_holder):
 
 
 def first_time_channel(channel, video_ids, downloads_file_path):
-    downloads = load_file_or_default(
-        downloads_file_path,
-        [{"id": 'place_holder', "channel": "channel_place_holder"}],
-    )
+    downloads = load_file_or_default(downloads_file_path,[],)
 
     if not any(download['channel'] == channel for download in downloads):
         for video in video_ids:
@@ -113,10 +115,7 @@ def youtube_channel(channel, downloads_file_path):
     first_time_channel(channel, video_ids, downloads_file_path)
 
     for video in video_ids:
-        downloads = load_file_or_default(
-            downloads_file_path,
-            [{"id": 'place_holder', "channel": "channel_place_holder"}],
-        )
+        downloads = load_file_or_default(downloads_file_path,[],)
 
         if video not in [download['id'] for download in downloads]:
             download_youtube_file(
@@ -129,10 +128,7 @@ def podbean_channel(channel, downloads_file_path):
     first_time_channel(channel, links, downloads_file_path)
 
     for video in links:
-        downloads = load_file_or_default(
-            downloads_file_path,
-            [{"id": 'place_holder', "channel": "channel_place_holder"}],
-        )
+        downloads = load_file_or_default(downloads_file_path,[],)
 
         if video not in [download['id'] for download in downloads]:
             download_podbean_file(
