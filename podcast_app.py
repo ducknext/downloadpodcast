@@ -34,7 +34,7 @@ def download_youtube_file(video, downloads, channel, downloads_file_path):
 
     ydl_opts = {
         'audio-format': 'bestaudio/best',
-        'outtmpl': '%(id)s-%(uploader)s.%(ext)s',
+        'outtmpl': '%(title)s-%(uploader)s-%(id)s.%(ext)s',
         'noplaylist': True,
         'progress_hooks': [my_hook],
         'postprocessors': [{
