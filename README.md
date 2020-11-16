@@ -21,3 +21,10 @@ If there is a new channel added to the list then on the first run with this new 
 
 
 On every next run it will download those videos which hasn't been downloaded already.
+
+
+You will need `ffmpeg` to convert to mp3 format. For Linux:
+
+```
+sudo apt install ffmpeg
+```

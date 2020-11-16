@@ -101,7 +101,7 @@ def load_file_or_default(file_name, place_holder):
 
 
 def first_time_channel(channel, video_ids, downloads_file_path):
-    downloads = load_file_or_default(downloads_file_path,[],)
+    downloads = load_file_or_default(downloads_file_path, [])
 
     if not any(download['channel'] == channel for download in downloads):
         for video in video_ids:
@@ -115,7 +115,7 @@ def youtube_channel(channel, downloads_file_path):
     first_time_channel(channel, video_ids, downloads_file_path)
 
     for video in video_ids:
-        downloads = load_file_or_default(downloads_file_path,[],)
+        downloads = load_file_or_default(downloads_file_path, [])
 
         if video not in [download['id'] for download in downloads]:
             download_youtube_file(
@@ -128,7 +128,7 @@ def podbean_channel(channel, downloads_file_path):
     first_time_channel(channel, links, downloads_file_path)
 
     for video in links:
-        downloads = load_file_or_default(downloads_file_path,[],)
+        downloads = load_file_or_default(downloads_file_path, [])
 
         if video not in [download['id'] for download in downloads]:
             download_podbean_file(
@@ -151,3 +151,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+#     {"id": "UC9ZM3N0ybRtp44-WLqsW3iQ", "name": "Mark Moss", "site": "youtube"},
+#     {"id": "UCpvyOqtEc86X8w8_Se0t4-w", "name": "George Gammon", "site": "youtube"},
+#     {"id": "UC0iTb2U2nWkm5X3XRityENw", "name": "WallStForMainSt", "site": "youtube"},
+#     {"id": "ttmygh", "name": "ttmygh", "site": "podbean"}
