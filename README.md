@@ -17,13 +17,13 @@ The `.podcast_channels.json` has the following structure:
 The script uses RSS feed link to find the most recent videos for a channel.
 
 
-If there is a new channel added to the list then on the first run with this new channel the script will save all video IDs as already downloaded without downloading them. It goes with the assumption that you are up to date with the channel and want to download only new videos.
+If there is a new channel added to the list then on the first run with this new channel the script will save all video IDs as already downloaded without downloading them. It goes with the assumption that the user is up to date with the channel and wants to download only the new videos.
 
 
-On every next run it will download those videos which hasn't been downloaded already.
+On every next run it will download only those videos which hasn't been downloaded already.
 
 
-You will need `ffmpeg` to convert to mp3 format. For Linux:
+For the script to succesfully convert to mp3 `ffmpeg` is needed. For Linux Ubuntu:
 
 ```
 sudo apt install ffmpeg
