@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import unicode_literals
 import youtube_dl
 from bs4 import BeautifulSoup
 import requests
