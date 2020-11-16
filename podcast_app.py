@@ -151,9 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-#     {"id": "UC9ZM3N0ybRtp44-WLqsW3iQ", "name": "Mark Moss", "site": "youtube"},
-#     {"id": "UCpvyOqtEc86X8w8_Se0t4-w", "name": "George Gammon", "site": "youtube"},
-#     {"id": "UC0iTb2U2nWkm5X3XRityENw", "name": "WallStForMainSt", "site": "youtube"},
-#     {"id": "ttmygh", "name": "ttmygh", "site": "podbean"}
