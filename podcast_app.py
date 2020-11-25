@@ -24,18 +24,12 @@ def get_podbean_links(channel_id):
     return [a.get('url') for a in soupeddata.find_all('enclosure')]
 
 
-def my_hook(d):
-    if d['status'] == 'finished':
-        print('Done downloading, now converting ...')
-
-
 def download_youtube_file(video, downloads, channel, downloads_file_path):
 
     ydl_opts = {
         'audio-format': 'bestaudio/best',
         'outtmpl': '%(title)s-%(uploader)s-%(id)s.%(ext)s',
-        'noplaylist': True,
-        'progress_hooks': [my_hook],
+        # 'noplaylist': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -101,36 +95,23 @@ def load_file_or_default(file_name, place_holder):
 
 def first_time_channel(channel, video_ids, downloads_file_path):
     downloads = load_file_or_default(downloads_file_path, [])
-
-    if not any(download['channel'] == channel for download in downloads):
+    if not any(download['channel'] == channel for download in downloads):  # TODO not any. put ID seperately in json
         for video in video_ids:
             downloads.append({"id": video, "channel": channel})
         dump_file(downloads, downloads_file_path)
 
 
-def youtube_channel(channel, downloads_file_path):
-    video_ids = get_youtube_link_ids(channel)
-
+def download_all_videos(
+    channel,
+    downloads_file_path,
+    video_ids,
+    download_file
+):
     first_time_channel(channel, video_ids, downloads_file_path)
-
     for video in video_ids:
         downloads = load_file_or_default(downloads_file_path, [])
-
         if video not in [download['id'] for download in downloads]:
-            download_youtube_file(
-                video, downloads, channel, downloads_file_path)
-
-
-def podbean_channel(channel, downloads_file_path):
-    links = get_podbean_links(channel)
-
-    first_time_channel(channel, links, downloads_file_path)
-
-    for video in links:
-        downloads = load_file_or_default(downloads_file_path, [])
-
-        if video not in [download['id'] for download in downloads]:
-            download_podbean_file(
+            download_file(
                 video, downloads, channel, downloads_file_path)
 
 
@@ -140,12 +121,22 @@ def main():
     downloads_file_path = called_from + '/' + '.podcast_downloads.json'
 
     for channel in load_file_or_fail(channels_file_path):
-
         if channel['site'] == 'youtube':
-            youtube_channel(channel['id'], downloads_file_path)
-
+            video_ids = get_youtube_link_ids(channel['id'])
+            download_all_videos(
+                channel['id'],
+                downloads_file_path,
+                video_ids,
+                download_youtube_file
+            )
         if channel['site'] == 'podbean':
-            podbean_channel(channel['id'], downloads_file_path)
+            video_ids = get_podbean_links(channel['id'])
+            download_all_videos(
+                channel['id'],
+                downloads_file_path,
+                video_ids,
+                download_podbean_file
+            )
 
 
 if __name__ == "__main__":
