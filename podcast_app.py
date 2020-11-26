@@ -6,6 +6,11 @@ import requests
 import json
 import os
 
+"""
+All script is about downloading files.
+To shorten the variable names the word 'download' is shortened to 'dl'
+"""
+
 
 def get_youtube_link_ids(channel_id):
     page = requests.get(
@@ -24,12 +29,13 @@ def get_podbean_links(channel_id):
     return [a.get('url') for a in soupeddata.find_all('enclosure')]
 
 
-def download_youtube_file(video, downloads, channel, downloads_file_path):
+def download_youtube_file(
+        video, dl_channels, dl_files, dl_content, channel, dl_file_path):
 
     ydl_opts = {
         'audio-format': 'bestaudio/best',
         'outtmpl': '%(title)s-%(uploader)s-%(id)s.%(ext)s',
-        # 'noplaylist': True,
+        'noplaylist': True,
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -42,19 +48,26 @@ def download_youtube_file(video, downloads, channel, downloads_file_path):
             ydl.download(
                 ['https://www.youtube.com/watch?v={}'.format(video)])
 
-        downloads.append({"id": video, "channel": channel})
-        dump_file(downloads, downloads_file_path)
+        dl_files.append({"id": video, "channel": channel})
+        dl_content['downloads'] = dl_files
+        dl_content['channels'] = dl_channels
+
+        dump_file(dl_content, dl_file_path)
+
     except youtube_dl.utils.DownloadError:
         print("Youtube Error with link https://www.youtube.com/watch?v={}"
               .format(video))
 
 
-def download_podbean_file(video, downloads, channel, downloads_file_path):
+def download_podbean_file(
+        video, dl_channels, dl_files, dl_content, channel, dl_file_path):
+
     title = str(video).split('/')[-1]
 
     print('Downloading {}...'.format(title))
 
     response = requests.get(video, stream=True)
+
     if response.status_code == 200:
         handle = open(title, "wb")
         for chunk in response.iter_content(chunk_size=512):
@@ -63,8 +76,12 @@ def download_podbean_file(video, downloads, channel, downloads_file_path):
 
         print('Download done')
 
-        downloads.append({"id": video, "channel": channel})
-        dump_file(downloads, downloads_file_path)
+        dl_files.append({"id": video, "channel": channel})
+        dl_content['downloads'] = dl_files
+        dl_content['channels'] = dl_channels
+
+        dump_file(dl_content, dl_file_path)
+
     else:
         print("PodBean Error with link {}".format(video))
 
@@ -93,47 +110,58 @@ def load_file_or_default(file_name, place_holder):
             return json.load(f)
 
 
-def first_time_channel(channel, video_ids, downloads_file_path):
-    downloads = load_file_or_default(downloads_file_path, [])
-    if not any(download['channel'] == channel for download in downloads):  # TODO not any. put ID seperately in json
+def first_time_channel(channel, dl_channels, dl_files, video_ids):
+
+    if channel not in dl_channels:
+        dl_channels.append(channel)
         for video in video_ids:
-            downloads.append({"id": video, "channel": channel})
-        dump_file(downloads, downloads_file_path)
+            dl_files.append({"id": video, "channel": channel})
+
+    return dl_channels, dl_files
 
 
-def download_all_videos(
-    channel,
-    downloads_file_path,
-    video_ids,
-    download_file
-):
-    first_time_channel(channel, video_ids, downloads_file_path)
+def download_all_videos(channel, dl_channels, dl_files, dl_content,
+                        dl_file_path, video_ids, dl_file):
+
+    dl_channels, dl_files = first_time_channel(
+        channel, dl_channels, dl_files, video_ids)
+
     for video in video_ids:
-        downloads = load_file_or_default(downloads_file_path, [])
-        if video not in [download['id'] for download in downloads]:
-            download_file(
-                video, downloads, channel, downloads_file_path)
+        if video not in [download['id'] for download in dl_files]:
+            dl_file(video, dl_channels, dl_files, dl_content,
+                    channel, dl_file_path)
 
 
 def main():
     called_from = os.path.dirname(os.path.realpath(__file__))
     channels_file_path = called_from + '/' + '.podcast_channels.json'
-    downloads_file_path = called_from + '/' + '.podcast_downloads.json'
+    dl_file_path = called_from + '/' + '.podcast_downloads.json'
+
+    dl_content = load_file_or_default(dl_file_path, [])
+    dl_channels = dl_content['channels']
+    dl_files = dl_content['downloads']
 
     for channel in load_file_or_fail(channels_file_path):
         if channel['site'] == 'youtube':
             video_ids = get_youtube_link_ids(channel['id'])
             download_all_videos(
                 channel['id'],
-                downloads_file_path,
+                dl_channels,
+                dl_files,
+                dl_content,
+                dl_file_path,
                 video_ids,
                 download_youtube_file
             )
+
         if channel['site'] == 'podbean':
             video_ids = get_podbean_links(channel['id'])
             download_all_videos(
                 channel['id'],
-                downloads_file_path,
+                dl_channels,
+                dl_files,
+                dl_content,
+                dl_file_path,
                 video_ids,
                 download_podbean_file
             )
