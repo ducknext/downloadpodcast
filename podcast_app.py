@@ -31,7 +31,7 @@ def get_podbean_links(channel_id):
 
 def download_youtube_file(video, channel, dl_file_path):
     ydl_opts = {
-        'format': 'best',
+        'format': 'bestaudio/best',
         'outtmpl': '%(title)s-%(uploader)s-%(id)s.%(ext)s',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
